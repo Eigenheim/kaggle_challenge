@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import xgboost as xgb
+#import xgboost as xgb
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error
 
@@ -19,9 +19,19 @@ def importData():
 
 def processData(data):
     # TODO: Implement data processing
+    data['LotFrontage'] = data['LotFrontage'].fillna(data['LotFrontage'].median())
+    data['MasVnrArea'] = data['MasVnrArea'].fillna(data['MasVnrArea'].median())
+    data = data.fillna(0)
     return data
 
 def buildModel(data, labels):
+    from sklearn.linear_model import Lasso
+    # I found this best alpha through cross-validation.
+    best_alpha = 0.00058
+
+    regression = Lasso(alpha=best_alpha, max_iter=50000)
+
+    '''
     regression = xgb.XGBRegressor(
         colsample_bytree=0.2,
         gamma=0.0,
@@ -34,7 +44,7 @@ def buildModel(data, labels):
         subsample=0.2,
         seed=42,
         silent=1)
-
+    '''
     regression.fit(data, labels)
 
     return regression
@@ -47,6 +57,8 @@ test_processed = processData(kaggle_test)
 
 total_processed = pd.concat([train_processed, test_processed], keys = ["train", "test"])
 total_processed = pd.get_dummies(total_processed)
+
+total_processed = total_processed.apply(lambda x: (x - np.mean(x)) / (np.max(x) - np.min(x)))
 
 total_processed.to_csv("total_processed.csv", header = True)
 
